@@ -21,54 +21,38 @@ function calculateWinner(squares) {
   return {winner:null, line:[]};
 }
 
-class Square extends React.Component {
-  render() {
+function Square(props) {
+  if (props.highlight) {
     return (
-      <button 
-        className="square"
-        onClick={this.props.onClick}
-        style={{color: this.props.winnerFlag ? "red" : "black"}}>
-        {this.props.value}
+      <button className="square" onClick={() => props.onClick()} style={{color: "red"}}> 
+        {props.value}
       </button>
     );
+  }else {
+  return (
+    <button className="square" onClick={() => props.onClick()}>
+      {props.value}
+    </button>
+  );
   }
 }
 
 class Board extends React.Component {
-  renderSquare(i, j) {
-    const { squares, winnerLine } = this.props;
-    let flag;
-
-    if (winnerLine[i]) {
-      const [ a, b ] = winnerLine[i].split(",");
-      flag = a == i && b == j;
-    }
-
-    return (
-      <Square 
-        key={j}
-        value={squares[i][j]}
-        winnerFlag={flag}
-        onClick={() => this.props.onClick(i, j)}
-         />
-    );
+  renderSquare(i) {
+    return <Square key={i} value={this.props.squares[i]} onClick={() => this.props.onClick(i)} highlight={this.props.winnerLine.includes(i)}/>;
   }
-
   render() {
-    const squares = this.props.squares;
-
-    let boardRows = [];
-    for (let row = 0; row < squares.length; row++) {
-      let boardRow = [];
-      for (let col = 0; col < squares[row].length; col++) {
-        boardRow.push(this.renderSquare(row, col));
+    var rows = [];
+    for (var i=0; i<3 ; i++){
+      var row = [];
+      for (var j=3*i; j<3*i+3;j++){
+        row.push(this.renderSquare(j));
       }
-      boardRows.push(<div className="board-row" key={row}>{boardRow}</div>);
+      rows.push(<div className="board=row" key={i}>{row}</div>)
     }
-
     return (
       <div>
-        {boardRows}
+        {rows}
       </div>
     );
   }
@@ -78,109 +62,85 @@ class Game extends React.Component {
   constructor() {
     super();
     this.state = {
-      // 历史记录
       history: [{
-        squares: [
-          [null,null,null],
-          [null,null,null],
-          [null,null,null]
-        ],
+        squares: Array(9).fill(null),
+        lastStep: 'Game start',
       }],
-      stepNumber: 0,  // 行走的记录次数
-      lastSelect: -1, // 最后一次选中的记录
-      xIsNext: true,  // 'X'是否为下一次的落子
+      xIsNext: true,
+      stepNumber: 0,
       sort: false,
     };
   }
-
-  /**
-   * [handleClick 点击进行落子]
-   * @param  {[Number]} i [格子的序号]
-   * @return {[void]}
-   */
-  handleClick(i, j) {
+  handleClick(i) {
     const history = this.state.history;
     const current = history[this.state.stepNumber];
-    const squares = JSON.parse(JSON.stringify(current.squares));
-    // 若当前格子 已经有落子/已有一方胜利，就无法继续落子
-    if (calculateWinner(squares) || squares[i][j]) {
+    const squares = current.squares.slice();
+    if (calculateWinner(squares).winner || squares[i]) {
       return;
     }
-
-    squares[i][j] = this.state.xIsNext ? 'X' : 'O';
-    this.setState({ 
-      history: history.concat([{
-        squares: squares
-      }]),
-      stepNumber: history.length,
-      xIsNext: !this.state.xIsNext,
-    });
-  }
-
-  /**
-   * [jumpTo 跳转到指定记录]
-   * @param  {[Number]} step [记录的索引]
-   * @return {[void]}
-   */
-  jumpTo(step) {
+    squares[i] = this.state.xIsNext ? 'X' : 'O';
+    const location = '('+ (Math.floor(i / 3)+1) + ',' + ((i % 3)+1) + ')';
+    const desc = squares[i] + ' moved to ' + location;
     this.setState({
-      stepNumber: step,
-      lastSelect: step,
-      xIsNext: (step % 2) ? false : true,
-    });
+      history: history.concat([{
+        squares: squares,
+        lastStep: desc,
+      }]),
+      xIsNext: !this.state.xIsNext,
+      stepNumber: history.length,
+    })
   }
-
+  jumpTo(step) {
+  this.setState({
+    stepNumber: step,
+    xIsNext: (step % 2) ? false : true,
+  });
+}
   toggleSort() {
     this.setState({
-      sort: !this.state.sort
-    });
+      sort:!this.state.sort,
+    })
   }
-
   render() {
     let history = this.state.history;
-    const current = history[this.state.stepNumber];   // 当前的行走记录
-    const winner = calculateWinner(current.squares);
+    const current = history[this.state.stepNumber];
+    const winner = calculateWinner(current.squares).winner;
+    const winnerLine = calculateWinner(current.squares).line;
 
-    if (this.state.sort) {
+    let status;
+    if (winner) {
+      status = 'Winner: ' + winner;
+    } else {
+      status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+    }
+    if (this.state.sort){
       history = this.state.history.slice();
       history.reverse();
-    }
-    // 行走记录功能
-    const moves = history.map((step, move) => {
-      const desc = move ? `Move #${move}` : "Game start";
-
+      }
+    const moves = history.map((step,move) => {
+     const desc = step.lastStep;
+      if (move == this.state.stepNumber) {
+        return (
+          <li key={move}>
+            <a href="#" onClick={() => this.jumpTo(move)}><strong>{desc}</strong></a>
+         </li>
+        );
+      }
       return (
         <li key={move}>
-          <a 
-            href="#" 
-            className={this.state.lastSelect === move ? "happy" : ""}
-            onClick={() => this.jumpTo(move)}>{desc}</a>
-        </li>
+          <a href="#" onClick={() => this.jumpTo(move)}>{desc}</a>
+         </li>
       );
     });
-
-    let status;   // 游戏状况的信息
-    let winner_line = [];
-    if (winner) {
-      status = "Winner is: " + winner.result;
-      winner_line = winner.line;
-    } else {
-      status = `Next player: ${this.state.xIsNext ? 'X' : 'O'}`;
-    }
-
+    
     return (
       <div className="game">
         <div className="game-board">
-          <Board
-            squares={current.squares}
-            winnerLine={winner_line}
-            onClick={(i, j) => this.handleClick(i, j)} />
+          <Board squares={current.squares} onClick={(i) => this.handleClick(i)} winnerLine={winnerLine}/>
         </div>
         <div className="game-info">
-          <div>
-            <span>{status} </span> 
-            <button onClick={() => this.toggleSort()}>switch</button>
-          </div>
+          <div>{status}</div>
+          <button onClick={() => this.toggleSort()}>Sort</button>
           <ol>{moves}</ol>
         </div>
       </div>
