@@ -24,7 +24,7 @@ function calculateWinner(squares) {
     if (squares[a1][a2] && squares[a1][a2] === squares[b1][b2] && squares[a1][a2] === squares[c1][c2]) {
       return {
         result: squares[a1][a2],
-        line: [squares[a1][a2], squares[b1][b2], squares[c1][c2]]
+        line: [a, b, c]
       };
     }
   }
@@ -47,7 +47,12 @@ class Square extends React.Component {
 class Board extends React.Component {
   renderSquare(i, j) {
     const { squares, winnerLine } = this.props;
-    const flag = squares[i][j] === winnerLine[i];
+    let flag;
+
+    if (winnerLine[i]) {
+      const [ a, b ] = winnerLine[i].split(",");
+      flag = a == i && b == j;
+    }
 
     return (
       <Square 
