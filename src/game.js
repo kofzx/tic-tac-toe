@@ -2,33 +2,23 @@ import React from 'react';
 import './index.css';
 
 function calculateWinner(squares) {
-  // 横竖撇捺出现“三子”即是胜利方
   const lines = [
-    ["0,0", "0,1", "0,2"],
-    ["1,0", "1,1", "1,2"],
-    ["2,0", "2,1", "2,2"],
-    ["0,0", "1,0", "2,0"],
-    ["0,1", "1,1", "2,1"],
-    ["0,2", "1,2", "2,2"],
-    ["0,1", "1,1", "2,2"],
-    ["0,2", "1,1", "2,0"]
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
   ];
-
   for (let i = 0; i < lines.length; i++) {
     const [a, b, c] = lines[i];
-
-    const [a1, a2] = a.split(",");
-    const [b1, b2] = b.split(",");
-    const [c1, c2] = c.split(",");
-
-    if (squares[a1][a2] && squares[a1][a2] === squares[b1][b2] && squares[a1][a2] === squares[c1][c2]) {
-      return {
-        result: squares[a1][a2],
-        line: [a, b, c]
-      };
+    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+      return {winner:squares[a], line:[a, b, c]};
     }
   }
-  return null;
+  return {winner:null, line:[]};
 }
 
 class Square extends React.Component {
